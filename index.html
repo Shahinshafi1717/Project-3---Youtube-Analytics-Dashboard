@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>YouTube Analytics Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --r:#E53935;--r2:#C62828;--r3:#ff8a80;
+  --bg:#0d0d1f;--bg2:#1a0a2e;--bg3:#0a1628;
+  --card:rgba(255,255,255,0.06);--cardb:rgba(255,255,255,0.12);
+  --text:#ffffff;--text2:rgba(255,255,255,0.75);--text3:rgba(255,255,255,0.45);
+  --border:rgba(255,255,255,0.12);--hdr:rgba(13,13,31,0.92);
+}
+[data-theme="light"]{
+  --r:#C62828;--r2:#B71C1C;--r3:#E53935;
+  --bg:#f0f4ff;--bg2:#e8edf8;--bg3:#eef1fa;
+  --card:rgba(255,255,255,0.95);--cardb:rgba(255,255,255,1);
+  --text:#0f172a;--text2:#334155;--text3:#64748b;
+  --border:rgba(0,0,0,0.1);--hdr:rgba(248,250,255,0.97);
+}
+html{font-size:14px;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;height:100%}
+body{font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;height:100%;overflow-x:hidden;
+  background:linear-gradient(135deg,var(--bg) 0%,var(--bg2) 35%,var(--bg3) 70%,var(--bg) 100%);
+  background-attachment:fixed;color:var(--text);transition:background .3s,color .3s;
+  display:flex;flex-direction:column}
+
+/* ORBS — only 2, reduced opacity */
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(90px);opacity:.22}
+.orb1{width:480px;height:480px;top:-140px;left:-140px;background:radial-gradient(circle,#E53935,transparent 70%);animation:orbF 10s ease-in-out infinite}
+.orb2{width:550px;height:550px;bottom:-180px;right:-180px;background:radial-gradient(circle,#4a148c,transparent 70%);animation:orbF 13s ease-in-out infinite reverse}
+[data-theme="light"] .orb{opacity:.08}
+@keyframes orbF{0%,100%{transform:translate(0,0)}50%{transform:translate(25px,-18px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(229,57,53,.4)}70%{box-shadow:0 0 0 10px rgba(229,57,53,0)}}
+
+/* GLASS CARD */
+.gc{background:var(--card);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px;
+  box-shadow:0 4px 20px rgba(0,0,0,.2);animation:fadeUp .45s ease both;transition:transform .22s,box-shadow .22s,background .3s}
+.gc:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.25)}
+[data-theme="light"] .gc{box-shadow:0 4px 20px rgba(0,0,0,.08)}
+
+/* HEADER */
+.hdr{background:var(--hdr);backdrop-filter:blur(28px);border-bottom:1px solid rgba(229,57,53,.22);
+  padding:12px 22px;position:sticky;top:0;z-index:100;transition:background .3s}
+.hdr-in{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;width:100%}
+.logo{background:linear-gradient(135deg,var(--r),var(--r2));border-radius:12px;width:40px;height:40px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 18px rgba(229,57,53,.45);animation:pulse 2.5s infinite;flex-shrink:0}
+.hdr-title{font-size:15px;font-weight:900;color:var(--text);letter-spacing:-.3px}
+.hdr-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.badge{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.08);
+  border:1px solid var(--border);border-radius:20px;padding:5px 11px}
+[data-theme="light"] .badge{background:rgba(0,0,0,.05)}
+.dot{width:6px;height:6px;border-radius:50%}
+.rbtn{background:linear-gradient(135deg,var(--r),var(--r2));color:#fff;border:none;border-radius:10px;
+  padding:7px 15px;font-size:12px;font-weight:700;cursor:pointer;
+  box-shadow:0 3px 14px rgba(229,57,53,.35);transition:transform .2s;font-family:inherit}
+.rbtn:hover{transform:translateY(-1px)}
+.theme-btn{background:var(--card);color:var(--text);border:1px solid var(--border);
+  border-radius:10px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;
+  transition:all .2s;font-family:inherit;backdrop-filter:blur(10px)}
+.theme-btn:hover{background:rgba(229,57,53,.15);border-color:var(--r)}
+
+/* SEARCH BAR */
+.search-wrap{padding:10px 22px;background:var(--hdr);border-bottom:1px solid var(--border);
+  position:sticky;top:65px;z-index:95;backdrop-filter:blur(20px)}
+.search-inner{width:100%;display:flex;align-items:center;gap:10px}
+.search-box{flex:1;max-width:320px;background:rgba(255,255,255,.08);border:1px solid var(--border);
+  border-radius:30px;padding:7px 16px 7px 36px;font-size:12px;color:var(--text);
+  font-family:inherit;outline:none;transition:all .2s}
+[data-theme="light"] .search-box{background:rgba(0,0,0,.05);color:#1a1a2e}
+.search-box::placeholder{color:var(--text3)}
+.search-box:focus{border-color:var(--r);box-shadow:0 0 0 3px rgba(229,57,53,.15)}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none;line-height:1}
+
+/* CHANNEL BAR */
+.chbar{background:var(--hdr);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);
+  padding:9px 22px;display:flex;align-items:center;gap:7px;overflow-x:auto;
+  scrollbar-width:none;position:sticky;top:113px;z-index:90}
+.chbar::-webkit-scrollbar{display:none}
+.chip{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:30px;
+  border:1px solid var(--border);background:rgba(255,255,255,.07);cursor:pointer;
+  white-space:nowrap;transition:all .2s;font-size:11px;font-weight:700;color:var(--text);flex-shrink:0}
+[data-theme="light"] .chip{background:rgba(0,0,0,.05)}
+.chip:hover{border-color:var(--r);background:rgba(229,57,53,.15)}
+.chip.active{background:linear-gradient(135deg,var(--r),var(--r2));color:#fff;border-color:transparent;box-shadow:0 3px 12px rgba(229,57,53,.35)}
+.chip img{width:20px;height:20px;border-radius:50%;object-fit:cover}
+.chip.hidden{display:none}
+
+/* LAYOUT */
+.layout{display:flex;width:100%;margin:0 auto;position:relative;z-index:1;flex:1;min-height:0}
+.sb{width:220px;flex-shrink:0;background:rgba(13,13,31,.55);backdrop-filter:blur(20px);
+  border-right:1px solid var(--border);padding:14px 10px 24px;display:flex;flex-direction:column;
+  gap:2px;position:sticky;top:161px;height:calc(100vh - 161px - 58px);overflow-y:auto;scrollbar-width:none;transition:background .3s}
+[data-theme="light"] .sb{background:rgba(255,255,255,.92);border-right:1px solid rgba(0,0,0,.08)}
+.sb::-webkit-scrollbar{display:none}
+.sbl{font-size:9px;font-weight:800;color:var(--text3);letter-spacing:2px;text-transform:uppercase;padding:8px 12px 3px}
+.nb{display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:10px;border:none;
+  background:none;cursor:pointer;font-size:12px;font-weight:700;color:var(--text2);
+  width:100%;text-align:left;transition:all .2s;font-family:inherit}
+.nb:hover{background:rgba(229,57,53,.12);color:var(--text)}
+.nb.active{background:linear-gradient(135deg,rgba(229,57,53,.32),rgba(198,40,40,.22));
+  color:var(--text);border:1px solid rgba(229,57,53,.32);box-shadow:0 3px 12px rgba(229,57,53,.15)}
+.main{flex:1;padding:20px;overflow-x:hidden;overflow-y:auto;min-width:0;position:relative;z-index:1}
+
+/* KPI CARDS */
+.kgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:900px){.kgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.kgrid{grid-template-columns:1fr}}
+.kc{border-radius:18px;padding:18px;position:relative;overflow:hidden;animation:fadeUp .4s ease both;
+  transition:transform .22s;border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(20px)}
+[data-theme="light"] .kc{border:1px solid rgba(0,0,0,.08);box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.kc:hover{transform:translateY(-3px)}
+.kc::before{content:'';position:absolute;top:-25px;right:-25px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.05)}
+[data-theme="light"] .kc::before{background:rgba(255,255,255,.4)}
+.kc-lbl{font-size:10px;font-weight:800;letter-spacing:1.3px;color:rgba(255,255,255,.9);text-transform:uppercase;margin-bottom:7px}
+[data-theme="light"] .kc-lbl{color:var(--text)}
+.kc-val{font-size:27px;font-weight:900;color:#fff;letter-spacing:-1px;text-shadow:0 2px 8px rgba(0,0,0,.35)}
+[data-theme="light"] .kc-val{color:var(--text);text-shadow:none}
+.kc-grow{font-size:11px;margin-top:8px;display:flex;align-items:center;gap:5px}
+.grow-up{color:#16a34a;font-weight:800}
+.grow-dn{color:#dc2626;font-weight:800}
+[data-theme="dark"] .grow-up{color:#4ade80}
+[data-theme="dark"] .grow-dn{color:#f87171}
+.kc-badge{font-size:10px;background:rgba(255,255,255,.18);padding:3px 10px;border-radius:20px;color:#fff;font-weight:700}
+[data-theme="light"] .kc-badge{background:rgba(0,0,0,.08);color:var(--text2)}
+
+/* SECTION TITLE */
+.st{font-size:14px;font-weight:900;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.sb2{width:4px;height:17px;background:linear-gradient(var(--r),var(--r3));border-radius:4px;flex-shrink:0;box-shadow:0 0 8px rgba(229,57,53,.5)}
+[data-theme="light"] .sb2{box-shadow:0 0 4px rgba(198,40,40,.2)}
+
+/* TOP CHANNEL BANNER */
+.top-banner{background:linear-gradient(135deg,rgba(229,57,53,.2),rgba(198,40,40,.1));
+  border:1px solid rgba(229,57,53,.3);border-radius:18px;padding:16px 20px;margin-bottom:16px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;animation:fadeUp .3s ease}
+[data-theme="light"] .top-banner{background:linear-gradient(135deg,rgba(229,57,53,.1),rgba(198,40,40,.05))}
+
+/* CHANNEL GRID */
+.covgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:14px}
+.cov{background:var(--card);backdrop-filter:blur(20px);border:1px solid var(--border);
+  border-radius:18px;padding:15px;box-shadow:0 4px 18px rgba(0,0,0,.18);
+  animation:fadeUp .45s ease both;transition:all .22s;cursor:pointer}
+.cov:hover{transform:translateY(-4px);border-color:rgba(229,57,53,.35);box-shadow:0 10px 30px rgba(229,57,53,.12)}
+.mstat{background:rgba(255,255,255,.11);border-radius:10px;padding:9px 6px;text-align:center;border:1px solid rgba(255,255,255,.18)}
+[data-theme="light"] .mstat{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.08)}
+.mstat-lbl{font-size:9px;color:var(--text2);margin-bottom:3px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+.mstat-val{font-size:14px;font-weight:900;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.4)}
+[data-theme="light"] .mstat-val{color:var(--text);text-shadow:none}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{background:rgba(229,57,53,.18);color:var(--text);padding:10px 12px;text-align:left;font-size:10px;letter-spacing:1px;font-weight:800;text-transform:uppercase;border-bottom:1px solid rgba(229,57,53,.25)}
+[data-theme="light"] .tbl th{background:rgba(198,40,40,.1);color:var(--text)}
+.tbl th:first-child{border-radius:10px 0 0 0}.tbl th:last-child{border-radius:0 10px 0 0}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--border);font-weight:700;color:var(--text);vertical-align:middle}
+.tbl tr:hover td{background:rgba(229,57,53,.06)}
+.tbl tr:last-child td{border-bottom:none}
+.rnk{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff}
+
+/* VIDEO CARD */
+.vc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px;
+  display:flex;gap:10px;margin-bottom:8px;transition:all .2s}
+.vc:hover{transform:translateY(-2px);border-color:rgba(229,57,53,.3)}
+.vt{width:86px;height:54px;border-radius:7px;object-fit:cover;flex-shrink:0;transition:transform .2s}
+.vc:hover .vt{transform:scale(1.04)}
+.vtag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;display:inline-block}
+
+/* PROG */
+.pb{background:rgba(255,255,255,.08);border-radius:6px;height:7px;overflow:hidden;margin-top:4px}
+[data-theme="light"] .pb{background:rgba(0,0,0,.08)}
+.pf{height:7px;border-radius:6px;transition:width 1s ease}
+
+/* PIE LEG */
+.pie-leg{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:11px}
+
+/* EMPTY STATE */
+.empty{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:48px 24px;text-align:center;backdrop-filter:blur(10px)}
+.empty-icon{font-size:64px;margin-bottom:16px;display:block;opacity:.8}
+.empty-title{font-size:18px;font-weight:900;color:var(--r);margin-bottom:8px}
+.empty-sub{font-size:13px;color:var(--text3);line-height:1.6;max-width:260px;margin:0 auto 20px}
+.empty-chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.empty-chip{padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;
+  border:1px solid var(--border);color:var(--text2);background:rgba(255,255,255,.07);transition:all .2s}
+[data-theme="light"] .empty-chip{background:rgba(0,0,0,.05)}
+.empty-chip:hover{background:rgba(229,57,53,.2);border-color:var(--r);color:var(--text)}
+
+/* SPINNER */
+.spin-wrap{display:flex;flex-direction:column;align-items:center;padding:80px 0;gap:14px}
+.spinner{width:44px;height:44px;border:3px solid rgba(229,57,53,.18);border-top:3px solid var(--r);border-radius:50%;animation:spin .7s linear infinite}
+
+/* FOOTER */
+footer{background:var(--hdr);border-top:1px solid var(--border);padding:16px 22px;position:sticky;bottom:0;z-index:99;margin-top:auto;backdrop-filter:blur(20px)}
+.footer-in{width:100%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+
+/* CROW */
+.crow{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px}
+@media(max-width:700px){.crow{grid-template-columns:1fr}}
+
+/* MISC */
+.cat-pill{background:rgba(255,255,255,.09);border:1px solid var(--border);border-radius:20px;
+  padding:5px 13px;font-size:11px;font-weight:700;color:var(--text);cursor:pointer;transition:all .2s}
+.cat-pill:hover{background:rgba(229,57,53,.18);border-color:var(--r)}
+[data-theme="light"] .cat-pill{background:rgba(255,255,255,.9);border-color:rgba(0,0,0,.12);box-shadow:0 1px 4px rgba(0,0,0,.06)}
+
+/* empty chip light - handled in .empty-chip block above */
+
+@media(max-width:640px){.sb{display:none}.mobtabs{display:flex!important}.main{padding:12px}.covgrid{grid-template-columns:1fr}.crow{grid-template-columns:1fr}}
+.mobtabs{display:none;background:var(--hdr);border-bottom:1px solid var(--border);overflow-x:auto;padding:0 10px;scrollbar-width:none}
+.mobtab{padding:10px 12px;font-size:12px;font-weight:700;background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;color:var(--text3);font-family:inherit}
+.mobtab.active{color:var(--r);border-bottom-color:var(--r)}
+</style>
+</head>
+<body>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div id="app" style="position:relative;z-index:1;display:flex;flex-direction:column;flex:1;min-height:100vh"></div>
+
+<script>
+/*
+ * ── API PROXY CONFIG ─────────────────────────────────────────────────
+ * The YouTube API key lives in the backend (.env), never here.
+ * Point PROXY_BASE at wherever you deploy server.js.
+ *
+ * Local dev  →  http://localhost:3001
+ * Production →  https://your-proxy.railway.app  (or Render / Fly.io)
+ * ─────────────────────────────────────────────────────────────────────
+ */
+// ⚠️  Add your YouTube Data API v3 key here before running locally.
+// Get one free at: https://console.cloud.google.com/apis/credentials
+// Never commit your real key to a public repo.
+const API_KEY = "YOUR_YOUTUBE_API_KEY_HERE";
+const CACHE_KEY="yt_dash_v3",CACHE_TTL=6*60*60*1000;
+const PIE_C=["#E53935","#ff6b6b","#C62828","#ffcdd2"];
+
+// Simulated growth % per channel (would be real in production)
+const GROWTH={
+  "UCX6OQ3DkcsbYNE6H8uQQuVA":{subs:2.1,views:5.3},
+  "UCq-Fj5jknLsUf-MWSy4_brA":{subs:1.4,views:3.8},
+  "UC-lHJZR3Gqxm24_Vd_AJ5Yw":{subs:-0.3,views:-1.2},
+  "UC7_YxT-KID8kRbqZo7MyscQ":{subs:0.8,views:2.1},
+  "UCsBjURrPoezykLs9EqgamOA":{subs:3.2,views:7.4},
+  "UC4JX40jDee_tINbkjycV4Sg":{subs:1.9,views:4.2},
+  "UC8butISFwT-Wl7EV0hUK0BQ":{subs:4.1,views:9.2},
+  "UC29ju8bIPH5as8OGnQzwJyA":{subs:2.5,views:5.8},
+  "UC0C-w0YjGpqDXGB8IHb662A":{subs:-0.5,views:1.3},
+  "UCfM3zsQsOnfWNUppiycmBuw":{subs:0.2,views:0.8},
+  "UCupvZG-5ko_eiXAupbDfxWw":{subs:1.1,views:3.5},
+  "UC16niRr50-MSBwiO3YDb3RA":{subs:0.9,views:2.7},
+};
+
+const CHANNELS=[
+  {id:"UCX6OQ3DkcsbYNE6H8uQQuVA",name:"MrBeast",        cat:"Entertainment",color:"#f44336"},
+  {id:"UCq-Fj5jknLsUf-MWSy4_brA",name:"T-Series",       cat:"Music",       color:"#e53935"},
+  {id:"UC-lHJZR3Gqxm24_Vd_AJ5Yw",name:"PewDiePie",      cat:"Gaming",      color:"#ff7043"},
+  {id:"UC7_YxT-KID8kRbqZo7MyscQ",name:"Markiplier",     cat:"Gaming",      color:"#d500f9"},
+  {id:"UCsBjURrPoezykLs9EqgamOA",name:"Fireship",       cat:"Tech",        color:"#42a5f5"},
+  {id:"UC4JX40jDee_tINbkjycV4Sg",name:"TechWithTim",    cat:"Tech",        color:"#29b6f6"},
+  {id:"UC8butISFwT-Wl7EV0hUK0BQ",name:"freeCodeCamp",   cat:"Tech",        color:"#66bb6a"},
+  {id:"UC29ju8bIPH5as8OGnQzwJyA",name:"Traversy Media", cat:"Tech",        color:"#26c6da"},
+  {id:"UC0C-w0YjGpqDXGB8IHb662A",name:"Ed Sheeran",     cat:"Music",       color:"#ffa726"},
+  {id:"UCfM3zsQsOnfWNUppiycmBuw",name:"Eminem",         cat:"Music",       color:"#00bcd4"},
+  {id:"UCupvZG-5ko_eiXAupbDfxWw",name:"CNN",            cat:"News",        color:"#ef5350"},
+  {id:"UC16niRr50-MSBwiO3YDb3RA",name:"BBC News",       cat:"News",        color:"#ec407a"},
+];
+
+const fmt=n=>{if(!n&&n!==0)return"—";n=parseInt(n);return n>=1e9?(n/1e9).toFixed(1)+"B":n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n)};
+const saveCache=d=>{try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data:d}))}catch(e){}};
+const loadCache=()=>{try{const r=localStorage.getItem(CACHE_KEY);if(!r)return null;const{ts,data}=JSON.parse(r);return Date.now()-ts>CACHE_TTL?null:data}catch(e){return null}};
+
+// ── THEME PERSISTENCE ──
+const savedTheme = localStorage.getItem("theme") || "dark";
+document.documentElement.setAttribute("data-theme", savedTheme);
+
+let state={tab:"overview",selectedCh:"all",channelData:{},loadingChs:new Set(CHANNELS.map(c=>c.id)),loading:true,fromCache:false,theme:savedTheme,search:""};
+
+const setState=p=>{
+  const sb=document.querySelector('.sb');
+  const scroll=sb?sb.scrollTop:0;
+  state={...state,...p};
+  if(p.theme){
+    document.documentElement.setAttribute('data-theme',p.theme);
+    localStorage.setItem("theme", p.theme);
+  }
+  render();
+  const sbN=document.querySelector('.sb');
+  if(sbN)sbN.scrollTop=scroll;
+};
+
+async function fetchChannel(ch){
+  try{
+    const c=await(await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${ch.id}&key=${API_KEY}`)).json();
+    if(c.error||!c.items?.length)throw new Error(c.error?.message||"Not found");
+    const s=await(await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${ch.id}&maxResults=8&order=viewCount&type=video&key=${API_KEY}`)).json();
+    if(s.error)throw new Error(s.error.message);
+    const ids=s.items.map(i=>i.id.videoId).join(",");
+    const v=await(await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${ids}&key=${API_KEY}`)).json();
+    if(v.error)throw new Error(v.error.message);
+    state.channelData[ch.id]={channel:c.items[0],videos:v.items||[]};
+  }catch(e){
+    const cached=loadCache();
+    if(cached&&cached[ch.id]&&!cached[ch.id].error)state.channelData[ch.id]=cached[ch.id];
+    else state.channelData[ch.id]={error:e.message};
+  }finally{
+    state.loadingChs=new Set([...state.loadingChs].filter(x=>x!==ch.id));
+    if(state.loadingChs.size===0){state.loading=false;saveCache(state.channelData);}
+    render();
+  }
+}
+
+async function fetchAll(force=false){
+  if(!force){const cached=loadCache();if(cached&&Object.keys(cached).filter(k=>!cached[k].error).length>0){state={...state,channelData:cached,loading:false,loadingChs:new Set(),fromCache:true};render();return;}}
+  state={...state,loading:true,loadingChs:new Set(CHANNELS.map(c=>c.id)),channelData:{},fromCache:false};
+  render();
+  for(const ch of CHANNELS){await fetchChannel(ch);await new Promise(r=>setTimeout(r,320));}
+}
+
+/* ── CHARTS ── */
+function svgDonut(data,size=185){
+  const th=document.documentElement.getAttribute('data-theme')||'dark';
+  const isLight=th==='light';
+  const cx=size/2,cy=size/2,ro=size*.4,ri=size*.25;
+  const total=data.reduce((a,d)=>a+d.v,0)||1;
+  let angle=-Math.PI/2,sl="";
+  data.forEach((d,i)=>{
+    const sw=(d.v/total)*2*Math.PI*.97;
+    const[x1,y1]=[cx+ro*Math.cos(angle),cy+ro*Math.sin(angle)];
+    const[x2,y2]=[cx+ro*Math.cos(angle+sw),cy+ro*Math.sin(angle+sw)];
+    const[ix1,iy1]=[cx+ri*Math.cos(angle),cy+ri*Math.sin(angle)];
+    const[ix2,iy2]=[cx+ri*Math.cos(angle+sw),cy+ri*Math.sin(angle+sw)];
+    const lg=sw>Math.PI?1:0;
+    sl+=`<path d="M${ix1},${iy1} L${x1},${y1} A${ro},${ro} 0 ${lg},1 ${x2},${y2} L${ix2},${iy2} A${ri},${ri} 0 ${lg},0 ${ix1},${iy1} Z" fill="${PIE_C[i]}" stroke="${isLight?'rgba(240,244,255,.8)':'rgba(13,13,31,.5)'}" stroke-width="2" style="filter:drop-shadow(0 2px 5px ${PIE_C[i]}66)"/>`;
+    angle+=sw+.015;
+  });
+  const tc=isLight?'#0f172a':'#fff';
+  const tc2=isLight?'rgba(15,23,42,.5)':'rgba(255,255,255,.5)';
+  return`<svg width="100%" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+    ${sl}
+    <text x="${cx}" y="${cy-5}" text-anchor="middle" font-size="13" font-weight="900" fill="${tc}">${fmt(total)}</text>
+    <text x="${cx}" y="${cy+11}" text-anchor="middle" font-size="9" fill="${tc2}" font-weight="700">TOTAL</text>
+  </svg>`;
+}
+
+function svgArea(pts,color,h=128){
+  if(!pts||pts.length<2)return`<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px">No data</div>`;
+  const isLight=document.documentElement.getAttribute('data-theme')==='light';
+  const labelColor=isLight?'rgba(15,23,42,.55)':'rgba(255,255,255,.65)';
+  const dotStroke=isLight?'#f0f4ff':'#fff';
+  const W=300,pad=26,range=Math.max(...pts.map(p=>p.v))||1;
+  const xs=pts.map((_,i)=>pad+(i/(pts.length-1))*(W-pad*2));
+  const ys=pts.map(p=>h-pad-(p.v/range)*(h-pad*2));
+  const curve=xs.map((x,i)=>i===0?`M${x},${ys[i]}`:`C${(xs[i-1]+x)/2},${ys[i-1]} ${(xs[i-1]+x)/2},${ys[i]} ${x},${ys[i]}`).join(" ");
+  const area=`M${xs[0]},${h-pad} `+xs.map((x,i)=>`L${x},${ys[i]}`).join(" ")+` L${xs[xs.length-1]},${h-pad} Z`;
+  const id=`a${color.replace(/[^a-z0-9]/gi,'')}`;
+  const dots=xs.map((x,i)=>`<circle cx="${x}" cy="${ys[i]}" r="3.5" fill="${color}" stroke="${dotStroke}" stroke-width="1.5" style="filter:drop-shadow(0 0 5px ${color})"/>`).join("");
+  const xl=pts.filter((_,i)=>i%Math.max(1,Math.floor(pts.length/5))===0).map(p=>`<text x="${xs[pts.indexOf(p)]}" y="${h-7}" text-anchor="middle" font-size="8.5" fill="${labelColor}" font-weight="700">${p.l}</text>`).join("");
+  return`<svg width="100%" viewBox="0 0 ${W} ${h}" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="${isLight?'.22':'.38'}"/><stop offset="100%" stop-color="${color}" stop-opacity=".03"/></linearGradient></defs>
+    <path d="${area}" fill="url(#${id})"/>
+    <path d="${curve}" fill="none" stroke="${color}" stroke-width="2.8" stroke-linecap="round" style="filter:drop-shadow(0 0 6px ${color})"/>
+    ${dots}${xl}
+  </svg>`;
+}
+
+function svgHBar(data,color){
+  if(!data.length)return"";
+  const isLight=document.documentElement.getAttribute('data-theme')==='light';
+  const labelColor=isLight?'rgba(15,23,42,.75)':'rgba(255,255,255,.82)';
+  const W=300,bH=20,gap=8,pL=115,pR=48;
+  const maxV=Math.max(...data.map(d=>d.v),1),H=data.length*(bH+gap)+10;
+  return`<svg width="100%" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${data.map((d,i)=>{
+    const bw=Math.max((d.v/maxV)*(W-pL-pR),5),y=i*(bH+gap)+5;
+    const id=`h${i}${color.replace(/[^a-z0-9]/gi,'')}`;
+    const a=1-i*.09;
+    return`<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="${color}" stop-opacity="${a}"/><stop offset="100%" stop-color="${color}" stop-opacity="${a*.4}"/></linearGradient></defs>
+    <text x="${pL-8}" y="${y+bH/2+4}" text-anchor="end" font-size="9.5" fill="${labelColor}" font-weight="700">${d.n.slice(0,15)}</text>
+    <rect x="${pL}" y="${y}" width="${bw}" height="${bH}" rx="6" fill="url(#${id})" style="filter:drop-shadow(0 2px 5px ${color}55)"/>
+    <text x="${pL+bw+5}" y="${y+bH/2+4}" font-size="9" font-weight="900" fill="${color}">${fmt(d.v)}</text>`;
+  }).join("")}</svg>`;
+}
+
+function svgVBar(data,color){
+  if(!data.length)return"";
+  const isLight=document.documentElement.getAttribute('data-theme')==='light';
+  const valColor=isLight?'rgba(15,23,42,.85)':'#fff';
+  const lblColor=isLight?'rgba(15,23,42,.6)':'rgba(255,255,255,.78)';
+  const W=300,H=168,pB=34,pT=22,gap=8;
+  const logV=data.map(d=>d.v>0?Math.log10(d.v+1):0);
+  const maxLog=Math.max(...logV,1);
+  const bw=Math.floor((W-gap*(data.length+1))/data.length);
+  const minH=18;
+  return`<svg width="100%" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${data.map((d,i)=>{
+    const bh=Math.max(minH+((logV[i]/maxLog)*(H-pB-pT-minH)),minH);
+    const x=gap+(bw+gap)*i,y=H-pB-bh;
+    const id=`v${i}${color.replace(/[^a-z0-9]/gi,'')}`;
+    return`<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="${1-i*.09}"/><stop offset="100%" stop-color="${color}" stop-opacity="${.5-i*.04}"/></linearGradient></defs>
+    <rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="6" fill="url(#${id})" stroke="${color}" stroke-opacity=".3" stroke-width="1" style="filter:drop-shadow(0 3px 8px ${color}77)"/>
+    <text x="${x+bw/2}" y="${y-6}" text-anchor="middle" font-size="9" font-weight="900" fill="${valColor}">${fmt(d.v)}</text>
+    <text x="${x+bw/2}" y="${H-9}" text-anchor="middle" font-size="7.5" fill="${lblColor}" font-weight="700">${d.n.slice(0,9)}</text>`;
+  }).join("")}</svg>`;
+}
+
+function svgRadar(chs){
+  const isLight=document.documentElement.getAttribute('data-theme')==='light';
+  const gridColor=isLight?'rgba(15,23,42,.08)':'rgba(255,255,255,.06)';
+  const axisLabelColor=isLight?'rgba(15,23,42,.5)':'rgba(255,255,255,.55)';
+  const cx=130,cy=112,r=82,axes=["Subs","Views","Videos","Eng Rate","Avg Views"],n=axes.length,step=2*Math.PI/n;
+  let grid="",axL="",axT="";
+  [.25,.5,.75,1].forEach(sc=>{const pts=axes.map((_,i)=>{const a=-Math.PI/2+i*step;return`${cx+r*sc*Math.cos(a)},${cy+r*sc*Math.sin(a)}`}).join(" ");grid+=`<polygon points="${pts}" fill="none" stroke="${gridColor}" stroke-width="1"/>`;});
+  axes.forEach((_,i)=>{const a=-Math.PI/2+i*step;axL+=`<line x1="${cx}" y1="${cy}" x2="${cx+r*Math.cos(a)}" y2="${cy+r*Math.sin(a)}" stroke="${gridColor}" stroke-width="1"/>`;const[lx,ly]=[cx+(r+18)*Math.cos(a),cy+(r+18)*Math.sin(a)];axT+=`<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="${axisLabelColor}" font-weight="700">${axes[i]}</text>`;});
+  const loaded=chs.filter(ch=>state.channelData[ch.id]&&!state.channelData[ch.id].error).slice(0,4);
+  const maxS=Math.max(...loaded.map(ch=>parseInt(state.channelData[ch.id].channel.statistics.subscriberCount||0)),1);
+  const maxV2=Math.max(...loaded.map(ch=>parseInt(state.channelData[ch.id].channel.statistics.viewCount||0)),1);
+  const maxVid=Math.max(...loaded.map(ch=>parseInt(state.channelData[ch.id].channel.statistics.videoCount||0)),1);
+  const shapes=loaded.map(ch=>{
+    const d=state.channelData[ch.id],s=d.channel.statistics,vs=d.videos||[];
+    const eng=Math.min(vs.length?vs.reduce((a,v)=>{const vw=parseInt(v.statistics?.viewCount||1);return a+(parseInt(v.statistics?.likeCount||0)+parseInt(v.statistics?.commentCount||0))/vw},0)/vs.length*20:0,1);
+    const maxA=Math.max(...loaded.map(c=>{const ss=state.channelData[c.id].channel.statistics;return parseInt(ss.viewCount||0)/Math.max(parseInt(ss.videoCount||1),1)}),1);
+    const avg=parseInt(s.viewCount||0)/Math.max(parseInt(s.videoCount||1),1)/maxA;
+    const vals=[parseInt(s.subscriberCount||0)/maxS,parseInt(s.viewCount||0)/maxV2,parseInt(s.videoCount||0)/maxVid,eng,avg];
+    const pts=vals.map((v,i)=>{const a=-Math.PI/2+i*step;return`${cx+r*v*Math.cos(a)},${cy+r*v*Math.sin(a)}`}).join(" ");
+    return`<polygon points="${pts}" fill="${ch.color}" fill-opacity="${isLight?'.12':'.18'}" stroke="${ch.color}" stroke-width="2" style="filter:drop-shadow(0 0 5px ${ch.color}77)"/>`;
+  }).join("");
+  const legColor=isLight?'rgba(15,23,42,.7)':'rgba(255,255,255,.7)';
+  const leg=loaded.map((ch,i)=>`<text x="10" y="${i*14+12}" font-size="9" fill="${ch.color}" font-weight="800">▪ ${ch.name}</text>`).join("");
+  return`<svg width="100%" viewBox="0 0 260 226" xmlns="http://www.w3.org/2000/svg">${grid}${axL}${axT}${shapes}<g transform="translate(0,196)">${leg}</g></svg>`;
+}
+
+const trendPts=(seed,n)=>Array.from({length:n},(_,i)=>({l:`W${i+1}`,v:Math.abs(Math.sin(i*seed+seed)*80000+seed*5000+i*seed*400+seed*2000)}));
+
+/* ── RENDER ── */
+function render(){
+  const{tab,selectedCh,channelData,loading,loadingChs,fromCache,theme,search}=state;
+  const nav=[{id:"overview",ic:"📊",lb:"Overview"},{id:"compare",ic:"⚖️",lb:"Compare"},{id:"videos",ic:"🎬",lb:"Videos"},{id:"engagement",ic:"💬",lb:"Engagement"}];
+  const aCh=selectedCh!=="all"?CHANNELS.find(c=>c.id===selectedCh):null;
+  const aD=aCh?channelData[aCh.id]:null;
+  const aSn=aD?.channel?.snippet||{};
+  const aSt=aD?.channel?.statistics||{};
+  const aVids=aD?.videos||[];
+  const maxV=aVids.reduce((a,v)=>Math.max(a,parseInt(v.statistics?.viewCount||0)),1);
+  const engData=aVids.length?[
+    {n:"Views",v:aVids.reduce((a,v)=>a+parseInt(v.statistics?.viewCount||0),0)},
+    {n:"Likes",v:aVids.reduce((a,v)=>a+parseInt(v.statistics?.likeCount||0),0)},
+    {n:"Comments",v:aVids.reduce((a,v)=>a+parseInt(v.statistics?.commentCount||0),0)},
+  ]:[];
+  const loaded=CHANNELS.filter(ch=>channelData[ch.id]&&!channelData[ch.id].error);
+  const cats=[...new Set(CHANNELS.map(c=>c.cat))];
+
+  // Top performing channel
+  const topCh=loaded.length?[...loaded].sort((a,b)=>parseInt(channelData[b.id].channel.statistics.subscriberCount||0)-parseInt(channelData[a.id].channel.statistics.subscriberCount||0))[0]:null;
+
+  // Filter channels by search
+  const filteredChannels=CHANNELS.filter(ch=>ch.name.toLowerCase().includes(search.toLowerCase())||ch.cat.toLowerCase().includes(search.toLowerCase()));
+
+  const growBadge=(id,type)=>{
+    const g=GROWTH[id]?.[type]||0;
+    const up=g>=0;
+    return`<span class="${up?"grow-up":"grow-dn"}">${up?"↑":"↓"} ${Math.abs(g)}%</span><span style="font-size:10px;color:var(--text3);font-weight:600"> vs last month</span>`;
+  };
+
+  document.getElementById("app").innerHTML=`
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="hdr-in">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="logo"><svg width="20" height="15" viewBox="0 0 20 15"><polygon points="8,2 18,7.5 8,13" fill="white"/></svg></div>
+        <div><div class="hdr-title">YouTube Analytics Dashboard</div><div class="hdr-sub">${CHANNELS.length} channels • YouTube Data API v3 • Hex Softwares</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        ${fromCache?`<div class="badge"><div class="dot" style="background:#ffb300"></div><span style="font-size:10px;color:var(--text2);font-weight:600">Cached</span></div>`:""}
+        <div class="badge"><div class="dot" style="background:${loading?"#ffb300":"#00e676"};box-shadow:0 0 6px ${loading?"#ffb300":"#00e676"}"></div><span style="font-size:10px;color:var(--text2);font-weight:700">${loading?`${CHANNELS.length-loadingChs.size}/${CHANNELS.length}`:"● LIVE"}</span></div>
+        <button class="theme-btn" onclick="setState({theme:state.theme==='dark'?'light':'dark'})">${theme==="dark"?"☀️ Light":"🌙 Dark"}</button>
+        <button class="rbtn" onclick="fetchAll(true)">🔄 Refresh</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEARCH BAR -->
+  <div class="search-wrap">
+    <div class="search-inner">
+      <div style="position:relative;flex:1;max-width:320px">
+        <span class="search-icon">🔍</span>
+        <input class="search-box" type="text" placeholder="Search channels or categories..." value="${search}"
+          oninput="setState({search:this.value})" />
+      </div>
+      <div style="font-size:11px;color:var(--text3);font-weight:600">${filteredChannels.length} of ${CHANNELS.length} channels</div>
+    </div>
+  </div>
+
+  <!-- CHANNEL BAR -->
+  <div class="chbar">
+    <div class="chip ${selectedCh==="all"?"active":""}" onclick="setState({selectedCh:'all',tab:'overview'})">🌐 All</div>
+    ${CHANNELS.map(ch=>{
+      const d=channelData[ch.id];
+      const t=d?.channel?.snippet?.thumbnails?.default?.url;
+      const hidden=!ch.name.toLowerCase().includes(search.toLowerCase())&&!ch.cat.toLowerCase().includes(search.toLowerCase());
+      return`<div class="chip ${selectedCh===ch.id?"active":""} ${hidden?"hidden":""}" onclick="setState({selectedCh:'${ch.id}',tab:'overview'})">${t?`<img src="${t}"/>`:""}${ch.name}</div>`;
+    }).join("")}
+  </div>
+
+  <!-- MOBILE TABS -->
+  <div class="mobtabs">
+    ${nav.map(n=>`<button class="mobtab ${tab===n.id?"active":""}" onclick="setState({tab:'${n.id}'})">${n.ic} ${n.lb}</button>`).join("")}
+  </div>
+
+  <div class="layout" style="flex:1">
+    <!-- SIDEBAR -->
+    <div class="sb">
+      <div class="sbl">Navigation</div>
+      ${nav.map(n=>`<button class="nb ${tab===n.id?"active":""}" onclick="setState({tab:'${n.id}'})">${n.ic} ${n.lb}</button>`).join("")}
+      <div class="sbl" style="margin-top:8px">Channels</div>
+      <button class="nb ${selectedCh==="all"?"active":""}" onclick="setState({selectedCh:'all',tab:'overview'})">🌐 All</button>
+      ${CHANNELS.filter(ch=>!search||ch.name.toLowerCase().includes(search.toLowerCase())||ch.cat.toLowerCase().includes(search.toLowerCase())).map(ch=>{
+        const d=channelData[ch.id];
+        const t=d?.channel?.snippet?.thumbnails?.default?.url;
+        return`<button class="nb ${selectedCh===ch.id?"active":""}" onclick="setState({selectedCh:'${ch.id}',tab:'overview'})">${t?`<img src="${t}" style="width:17px;height:17px;border-radius:50%"/>`:`<span style="width:8px;height:8px;border-radius:50%;background:${ch.color};display:inline-block;box-shadow:0 0 5px ${ch.color}"></span>`}<span style="font-size:11px">${ch.name}</span></button>`;
+      }).join("")}
+    </div>
+
+    <div class="main">
+    ${loading&&!fromCache?`
+    <div class="spin-wrap">
+      <div class="spinner"></div>
+      <div style="font-size:14px;font-weight:700;color:var(--text2)">Loading ${CHANNELS.length} channels...</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px">
+        ${CHANNELS.map(ch=>`<span style="font-size:10px;padding:3px 10px;border-radius:10px;background:${channelData[ch.id]&&!channelData[ch.id].error?"rgba(46,125,50,.25)":"rgba(229,57,53,.12)"};color:${channelData[ch.id]&&!channelData[ch.id].error?"#81c784":"var(--text3)"};border:1px solid ${channelData[ch.id]&&!channelData[ch.id].error?"rgba(46,125,50,.35)":"var(--border)"};font-weight:700">${channelData[ch.id]&&!channelData[ch.id].error?"✓ ":""}${ch.name}</span>`).join("")}
+      </div>
+    </div>`:`
+
+    ${selectedCh==="all"?`
+
+      ${tab==="overview"?`
+        <!-- TOP CHANNEL BANNER -->
+        ${topCh?`<div class="top-banner">
+          <div style="font-size:28px">🏆</div>
+          <img src="${channelData[topCh.id].channel.snippet.thumbnails?.medium?.url}" style="width:44px;height:44px;border-radius:50%;border:2.5px solid ${topCh.color};object-fit:cover"/>
+          <div style="flex:1">
+            <div style="font-size:11px;font-weight:800;color:var(--r);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">🏆 Best Performing Channel</div>
+            <div style="font-size:17px;font-weight:900;color:var(--text)">${channelData[topCh.id].channel.snippet.title}</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:2px">${fmt(channelData[topCh.id].channel.statistics.subscriberCount)} subscribers • ${topCh.cat}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Subscriber Growth</div>
+            <div style="font-size:16px;font-weight:900" class="grow-up">↑ ${GROWTH[topCh.id]?.subs||0}%</div>
+          </div>
+        </div>`:""}
+
+        <!-- KPI SUMMARY -->
+        <div class="kgrid">
+          ${[
+            {l:"Channels Loaded",v:`${loaded.length}/${CHANNELS.length}`,g:"rgba(229,57,53,.25)",grow:null,badge:"📺 Active"},
+            {l:"Combined Subs",v:fmt(loaded.reduce((a,ch)=>a+parseInt(channelData[ch.id].channel.statistics.subscriberCount||0),0)),g:"rgba(21,101,192,.25)",grow:`<span class="grow-up">↑ 1.8%</span> <span style="font-size:10px;color:var(--text3)">avg growth</span>`,badge:"📢 Total"},
+            {l:"Combined Views",v:fmt(loaded.reduce((a,ch)=>a+parseInt(channelData[ch.id].channel.statistics.viewCount||0),0)),g:"rgba(123,31,162,.25)",grow:`<span class="grow-up">↑ 4.2%</span> <span style="font-size:10px;color:var(--text3)">this month</span>`,badge:"👁️ Total"},
+            {l:"Total Videos",v:fmt(loaded.reduce((a,ch)=>a+parseInt(channelData[ch.id].channel.statistics.videoCount||0),0)),g:"rgba(46,125,50,.25)",grow:null,badge:"🎬 Uploaded"},
+          ].map((c,i)=>`<div class="kc" style="background:${c.g};animation-delay:${i*.07}s">
+            <div class="kc-lbl">${c.l}</div>
+            <div class="kc-val">${c.v}</div>
+            <div class="kc-grow">${c.grow||`<span class="kc-badge">${c.badge}</span>`}</div>
+          </div>`).join("")}
+        </div>
+
+        <!-- CATEGORY PILLS -->
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px">
+          ${cats.map(cat=>`<span class="cat-pill" onclick="setState({search:'${cat}'})">${cat} <span style="color:var(--r);font-weight:900">${CHANNELS.filter(c=>c.cat===cat).length}</span></span>`).join("")}
+          ${search?`<span class="cat-pill" style="border-color:var(--r);color:var(--r)" onclick="setState({search:''})">✕ Clear</span>`:""}
+        </div>
+
+        <div class="st"><div class="sb2"></div>All Channels ${search?`<span style="font-size:11px;color:var(--text3);font-weight:600">(filtered: "${search}")</span>`:""}</div>
+        <div class="covgrid">
+          ${filteredChannels.map((ch,ci)=>{
+            const d=channelData[ch.id];
+            if(!d||d.error)return`<div class="cov" style="animation-delay:${ci*.04}s;opacity:.45">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <div style="width:44px;height:44px;border-radius:50%;background:var(--card);border:2px solid ${ch.color};display:flex;align-items:center;justify-content:center;font-size:16px">📺</div>
+                <div><div style="font-size:14px;font-weight:900;color:var(--text)">${ch.name}</div>
+                <span style="font-size:10px;background:var(--card);border:1px solid var(--border);color:var(--text2);padding:2px 8px;border-radius:10px;font-weight:700">${ch.cat}</span></div>
+              </div>
+              <div style="font-size:11px;color:var(--text3);text-align:center;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:10px">⚠️ Quota exceeded</div>
+            </div>`;
+            const s=d.channel.statistics,sn=d.channel.snippet;
+            const g=GROWTH[ch.id]||{subs:0,views:0};
+            return`<div class="cov" style="animation-delay:${ci*.04}s" onclick="setState({selectedCh:'${ch.id}',tab:'overview'})">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                <img src="${sn.thumbnails?.medium?.url||sn.thumbnails?.default?.url}" style="width:44px;height:44px;border-radius:50%;border:2.5px solid ${ch.color};object-fit:cover;box-shadow:0 0 12px ${ch.color}44"/>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:900;color:var(--text);line-height:1.3">${sn.title}</div>
+                  <span style="font-size:10px;background:var(--card);border:1px solid var(--border);color:var(--text2);padding:2px 8px;border-radius:10px;font-weight:700">${ch.cat}</span>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+                ${[["👁","Views",s.viewCount],["📢","Subs",s.subscriberCount],["🎬","Vids",s.videoCount]].map(([ic,lb,v])=>`
+                <div class="mstat">
+                  <div class="mstat-lbl">${ic} ${lb}</div>
+                  <div class="mstat-val" style="color:${ch.color}">${fmt(v)}</div>
+                </div>`).join("")}
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div style="font-size:10px">${g.subs>=0?`<span class="grow-up">↑ ${g.subs}%</span>`:`<span class="grow-dn">↓ ${Math.abs(g.subs)}%</span>`} <span style="color:var(--text3)">subs</span></div>
+                <div style="font-size:11px;font-weight:800;color:${ch.color}">Details →</div>
+              </div>
+            </div>`;
+          }).join("")}
+        </div>
+      `:""}
+
+      ${tab==="compare"?`
+        <div class="gc">
+          <div class="st"><div class="sb2"></div>Channel Comparison</div>
+          <div style="overflow-x:auto">
+            <table class="tbl">
+              <thead><tr><th>#</th><th>Channel</th><th>Category</th><th>Subscribers</th><th>Views</th><th>Videos</th><th>Avg/Video</th><th>Growth</th></tr></thead>
+              <tbody>
+                ${[...CHANNELS].sort((a,b)=>{const ga=channelData[a.id],gb=channelData[b.id];if(!ga||ga.error)return 1;if(!gb||gb.error)return-1;return parseInt(gb.channel.statistics.subscriberCount||0)-parseInt(ga.channel.statistics.subscriberCount||0);}).map((ch,i)=>{
+                  const d=channelData[ch.id];
+                  if(!d||d.error)return`<tr><td>${i+1}</td><td style="color:var(--text3)">${ch.name}</td><td colspan="6" style="color:var(--text3)">—</td></tr>`;
+                  const s=d.channel.statistics,sn=d.channel.snippet;
+                  const avg=Math.round(parseInt(s.viewCount||0)/Math.max(parseInt(s.videoCount||1),1));
+                  const g=GROWTH[ch.id]||{subs:0};
+                  const bg=i===0?"linear-gradient(135deg,#FFD700,#FFA000)":i===1?"linear-gradient(135deg,#CFD8DC,#90A4AE)":i===2?"linear-gradient(135deg,#BCAAA4,#8D6E63)":"linear-gradient(135deg,#546E7A,#37474F)";
+                  return`<tr>
+                    <td><div class="rnk" style="background:${bg}">${i+1}</div></td>
+                    <td><div style="display:flex;align-items:center;gap:8px"><img src="${sn.thumbnails?.default?.url}" style="width:26px;height:26px;border-radius:50%;border:2px solid ${ch.color}"/><span style="font-weight:800">${sn.title}</span></div></td>
+                    <td><span style="font-size:10px;background:var(--card);border:1px solid var(--border);padding:2px 8px;border-radius:10px;font-weight:700;color:var(--text2)">${ch.cat}</span></td>
+                    <td style="color:${ch.color};font-weight:900">${fmt(s.subscriberCount)}</td>
+                    <td style="color:var(--text2)">${fmt(s.viewCount)}</td>
+                    <td style="color:var(--text2)">${fmt(s.videoCount)}</td>
+                    <td style="color:var(--r3);font-weight:900">${fmt(avg)}</td>
+                    <td>${g.subs>=0?`<span class="grow-up">↑${g.subs}%</span>`:`<span class="grow-dn">↓${Math.abs(g.subs)}%</span>`}</td>
+                  </tr>`;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="crow">
+          <div class="gc"><div class="st"><div class="sb2"></div>Subscribers Bar</div>${svgHBar(loaded.sort((a,b)=>parseInt(channelData[b.id].channel.statistics.subscriberCount||0)-parseInt(channelData[a.id].channel.statistics.subscriberCount||0)).slice(0,8).map(ch=>({n:channelData[ch.id].channel.snippet.title,v:parseInt(channelData[ch.id].channel.statistics.subscriberCount||0)})),"#E53935")}</div>
+          <div class="gc"><div class="st"><div class="sb2"></div>Radar Analysis</div>${svgRadar(CHANNELS)}</div>
+        </div>
+      `:""}
+
+      ${tab==="videos"||tab==="engagement"?`
+        <div class="empty">
+          <span class="empty-icon">📺</span>
+          <div class="empty-title">Select a Channel</div>
+          <div class="empty-sub">Choose a channel from the sidebar or top bar to explore its videos and engagement data.</div>
+          <div class="empty-chips">
+            ${CHANNELS.slice(0,4).map(ch=>`<div class="empty-chip" onclick="setState({selectedCh:'${ch.id}',tab:'${tab}'})">${ch.name}</div>`).join("")}
+          </div>
+        </div>
+      `:""}
+
+    `:`
+      ${aD?`
+        ${tab==="overview"?`
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;padding:15px;background:var(--card);border-radius:18px;border:1px solid var(--border)">
+            <img src="${aSn.thumbnails?.high?.url||aSn.thumbnails?.default?.url}" style="width:52px;height:52px;border-radius:50%;border:3px solid ${aCh.color};object-fit:cover;box-shadow:0 0 16px ${aCh.color}44"/>
+            <div style="flex:1">
+              <div style="font-size:17px;font-weight:900;color:var(--text)">${aSn.title}</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:3px">📅 ${(aSn.publishedAt||"").slice(0,10)} • 🌍 ${aSn.country||"Global"} • <span style="color:${aCh.color};font-weight:700">${aCh.cat}</span></div>
+            </div>
+            <div style="text-align:right;display:flex;flex-direction:column;gap:4px">
+              <div style="font-size:10px;color:var(--text3)">Sub Growth</div>
+              <div class="${(GROWTH[aCh.id]?.subs||0)>=0?"grow-up":"grow-dn"}" style="font-size:16px;font-weight:900">${(GROWTH[aCh.id]?.subs||0)>=0?"↑":"↓"}${Math.abs(GROWTH[aCh.id]?.subs||0)}%</div>
+            </div>
+          </div>
+          <div class="kgrid">
+            ${[
+              {l:"Total Views",v:fmt(aSt.viewCount),g:"rgba(229,57,53,.25)",grow:growBadge(aCh.id,"views")},
+              {l:"Subscribers",v:fmt(aSt.subscriberCount),g:"rgba(21,101,192,.25)",grow:growBadge(aCh.id,"subs")},
+              {l:"Total Videos",v:fmt(aSt.videoCount),g:"rgba(198,40,40,.25)",grow:`<span class="kc-badge">🎬 Uploaded</span>`},
+              {l:"Top Likes",v:fmt(aVids[0]?.statistics?.likeCount||0),g:"rgba(123,31,162,.25)",grow:`<span class="kc-badge">👍 #1 Video</span>`},
+            ].map((c,i)=>`<div class="kc" style="background:${c.g};animation-delay:${i*.07}s">
+              <div class="kc-lbl">${c.l}</div>
+              <div class="kc-val">${c.v}</div>
+              <div class="kc-grow">${c.grow}</div>
+            </div>`).join("")}
+          </div>
+          <div class="crow">
+            <div class="gc"><div class="st"><div class="sb2"></div>Top Videos by Views</div>${svgVBar(aVids.slice(0,5).map(v=>({n:v.snippet.title.slice(0,12),v:parseInt(v.statistics?.viewCount||0)})),aCh.color)}</div>
+            <div class="gc"><div class="st"><div class="sb2"></div>Views Trend</div>${svgArea(trendPts(CHANNELS.findIndex(c=>c.id===selectedCh)+1,10),aCh.color)}</div>
+          </div>
+        `:""}
+
+        ${tab==="videos"?`
+          <div class="gc">
+            <div class="st"><div class="sb2"></div>Top Videos — ${aSn.title}</div>
+            ${aVids.slice(0,6).map((v,i)=>{
+              const val=parseInt(v.statistics?.viewCount||0);
+              const pct=Math.round(val/maxV*100);
+              return`<div style="margin-bottom:13px">
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;gap:8px">
+                  <span style="font-weight:700;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.snippet.title.slice(0,42)}</span>
+                  <span style="font-weight:900;color:${aCh.color};flex-shrink:0">${fmt(val)}</span>
+                </div>
+                <div class="pb"><div class="pf" style="width:${pct}%;background:linear-gradient(90deg,${aCh.color},${aCh.color}66)"></div></div>
+              </div>`;
+            }).join("")}
+          </div>
+          <div class="st" style="margin-bottom:10px"><div class="sb2"></div>All Videos</div>
+          ${aVids.map((v,i)=>`<div class="vc" style="animation-delay:${i*.04}s">
+            <img class="vt" src="${v.snippet.thumbnails?.medium?.url||v.snippet.thumbnails?.default?.url}"/>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${v.snippet.title}</div>
+              <div style="display:flex;gap:5px;flex-wrap:wrap">
+                <span class="vtag" style="background:rgba(229,57,53,.18);color:${aCh.color}">👁 ${fmt(v.statistics?.viewCount)}</span>
+                <span class="vtag" style="background:var(--card);border:1px solid var(--border);color:var(--text2)">👍 ${fmt(v.statistics?.likeCount)}</span>
+                <span class="vtag" style="background:var(--card);border:1px solid var(--border);color:var(--text2)">💬 ${fmt(v.statistics?.commentCount)}</span>
+              </div>
+            </div>
+          </div>`).join("")}
+        `:""}
+
+        ${tab==="engagement"?`
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:14px">
+            ${engData.map((e,i)=>{const gs=["rgba(229,57,53,.2)","rgba(21,101,192,.2)","rgba(198,40,40,.2)"],cs=["#E53935","#1565C0","#C62828"];return`<div style="background:${gs[i]};border:1px solid var(--border);border-radius:16px;padding:16px;backdrop-filter:blur(20px)"><div style="font-size:9px;font-weight:800;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">${e.n}</div><div style="font-size:22px;font-weight:900;color:${cs[i]}">${fmt(e.v)}</div></div>`;}).join("")}
+          </div>
+          <div class="crow">
+            <div class="gc">
+              <div class="st"><div class="sb2"></div>Engagement Donut</div>
+              <div style="max-width:185px;margin:0 auto">${svgDonut(engData)}</div>
+              <div class="pie-leg">${engData.map((e,i)=>`<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);background:var(--card);border:1px solid var(--border);padding:4px 10px;border-radius:20px;font-weight:700"><div style="width:8px;height:8px;border-radius:3px;background:${PIE_C[i]}"></div>${e.n}: ${fmt(e.v)}</div>`).join("")}</div>
+            </div>
+            <div class="gc"><div class="st"><div class="sb2"></div>Engagement Trend</div>${svgArea(trendPts(CHANNELS.findIndex(c=>c.id===selectedCh)+2,10),aCh.color)}</div>
+          </div>
+          <div class="gc">
+            <div class="st"><div class="sb2"></div>Engagement Rate per Video</div>
+            ${aVids.slice(0,6).map(v=>{
+              const views=parseInt(v.statistics?.viewCount||1);
+              const rate=((parseInt(v.statistics?.likeCount||0)+parseInt(v.statistics?.commentCount||0))/views*100).toFixed(2);
+              return`<div style="margin-bottom:13px">
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+                  <span style="font-weight:700;color:var(--text)">${v.snippet.title.slice(0,36)}…</span>
+                  <span style="font-weight:900;color:var(--r3)">${rate}%</span>
+                </div>
+                <div class="pb"><div class="pf" style="width:${Math.min(parseFloat(rate)*20,100)}%;background:linear-gradient(90deg,${aCh.color},${aCh.color}77)"></div></div>
+              </div>`;
+            }).join("")}
+          </div>
+        `:""}
+
+        ${tab==="compare"?`
+          <div class="gc">
+            <div class="st"><div class="sb2"></div>All Channels Comparison</div>
+            <div style="overflow-x:auto">
+              <table class="tbl">
+                <thead><tr><th>#</th><th>Channel</th><th>Category</th><th>Subscribers</th><th>Views</th><th>Videos</th><th>Avg/Video</th><th>Growth</th></tr></thead>
+                <tbody>
+                  ${[...CHANNELS].sort((a,b)=>{const ga=channelData[a.id],gb=channelData[b.id];if(!ga||ga.error)return 1;if(!gb||gb.error)return-1;return parseInt(gb.channel.statistics.subscriberCount||0)-parseInt(ga.channel.statistics.subscriberCount||0);}).map((ch,i)=>{
+                    const d=channelData[ch.id];
+                    if(!d||d.error)return`<tr><td>${i+1}</td><td style="color:var(--text3)">${ch.name}</td><td colspan="6" style="color:var(--text3)">—</td></tr>`;
+                    const s=d.channel.statistics,sn=d.channel.snippet;
+                    const avg=Math.round(parseInt(s.viewCount||0)/Math.max(parseInt(s.videoCount||1),1));
+                    const g=GROWTH[ch.id]||{subs:0};
+                    const bg=i===0?"linear-gradient(135deg,#FFD700,#FFA000)":i===1?"linear-gradient(135deg,#CFD8DC,#90A4AE)":i===2?"linear-gradient(135deg,#BCAAA4,#8D6E63)":"linear-gradient(135deg,#546E7A,#37474F)";
+                    return`<tr>
+                      <td><div class="rnk" style="background:${bg}">${i+1}</div></td>
+                      <td><div style="display:flex;align-items:center;gap:7px"><img src="${sn.thumbnails?.default?.url}" style="width:26px;height:26px;border-radius:50%;border:2px solid ${ch.color}"/><span style="font-weight:800">${sn.title}</span></div></td>
+                      <td><span style="font-size:10px;background:var(--card);border:1px solid var(--border);padding:2px 8px;border-radius:10px;font-weight:700;color:var(--text2)">${ch.cat}</span></td>
+                      <td style="color:${ch.color};font-weight:900">${fmt(s.subscriberCount)}</td>
+                      <td style="color:var(--text2)">${fmt(s.viewCount)}</td>
+                      <td style="color:var(--text2)">${fmt(s.videoCount)}</td>
+                      <td style="color:var(--r3);font-weight:900">${fmt(avg)}</td>
+                      <td>${g.subs>=0?`<span class="grow-up">↑${g.subs}%</span>`:`<span class="grow-dn">↓${Math.abs(g.subs)}%</span>`}</td>
+                    </tr>`;
+                  }).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `:""}
+      `:`
+        <div class="empty">
+          <span class="empty-icon">⚠️</span>
+          <div class="empty-title">No Data Available</div>
+          <div class="empty-sub">This channel's data couldn't be loaded. API quota may be exceeded. Try refreshing or wait until tomorrow.</div>
+        </div>
+      `}
+    `}
+    `}
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-in">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:28px;height:28px;background:linear-gradient(135deg,var(--r),var(--r2));border-radius:8px;display:flex;align-items:center;justify-content:center"><svg width="14" height="10" viewBox="0 0 14 10"><polygon points="5,1 13,5 5,9" fill="white"/></svg></div>
+        <div>
+          <div style="font-size:12px;font-weight:800;color:var(--text)">Built by Shain Shafi</div>
+          <div style="font-size:10px;color:var(--text3)">Hex Softwares Internship Project</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--text3)">📡 Data: YouTube Data API v3</span>
+        <span style="font-size:11px;color:var(--text3)">🕒 Last Updated: <span style="color:var(--r3);font-weight:700">Live</span></span>
+        <span style="font-size:11px;color:var(--text3)">📊 ${loaded.length}/${CHANNELS.length} channels active</span>
+      </div>
+    </div>
+  </footer>`;
+}
+
+render();
+fetchAll();
+</script>
+</body>
+</html>
